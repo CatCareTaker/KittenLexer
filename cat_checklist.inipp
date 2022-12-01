@@ -1,0 +1,11 @@
+[Main]
+
+[Info]
+name="kittenlexer"
+description="A minimalistic, kitten themed lexer"
+version="1.0.0"
+
+[Download]
+dependencies=[]
+files=["kittenlexer.hpp"]
+
