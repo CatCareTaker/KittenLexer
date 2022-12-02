@@ -101,7 +101,13 @@ public:
 	}
 
 	inline KittenLexer& erase_empty() {
-		this->erase_emptys;
+		this->erase_emptys = true;
+		return *this;
+	}
+
+	inline KittenLexer& add_linebreak(char c) {
+		if(!is_newline(c))
+			as_newline[c] = true;
 		return *this;
 	}
 
@@ -109,14 +115,16 @@ public:
 		lexed_kittens ret;
 		std::stack<char> opens;
 		std::string tmp;
-		bool next_string = false;
 		std::stack<char> stringqs;	
-
+		unsigned long line = 1;
 		for(auto i : src) {
-			if(stringqs.empty() && opens.empty() && is_ignore(i)) {
-				if(next_string || (tmp != "" || !erase_emptys)) {
-					ret.push_back(KittenToken{tmp,next_string});
+			if(stringqs.empty() && opens.empty() && (is_ignore(i) || is_newline(i))) {
+				if(tmp != "" || !erase_emptys) {
+					ret.push_back(KittenToken{tmp,false,line});
 					tmp = "";
+				}
+				if(is_newline(i)) {
+					++line;
 				}
 			}
 			else if(stringqs.empty() && is_capsule_open(i)) {
@@ -132,27 +140,30 @@ public:
 				}
 				opens.pop();
                 tmp += i;
-                ret.push_back(KittenToken{tmp,next_string});
-				next_string = false;
+                ret.push_back(KittenToken{tmp,false,line});
 				tmp = "";
 			}
 			else if(opens.empty() && is_stringq(i)) {
 				if(stringqs.empty()) {
+					if(tmp != "" || !erase_emptys) {
+						ret.push_back(KittenToken{tmp,false,line});
+						tmp = "";
+					}
 					stringqs.push(i);
 				}
 				else if(stringqs.top() == i) {
 					stringqs.pop();
-					next_string = true;
+					ret.push_back(KittenToken{tmp,true,line});
+					tmp = "";
 				}
 				else {
 					tmp += i;
 				}
 			}
 			else if(opens.empty() && stringqs.empty() && is_extract(i)) {
-				ret.push_back(KittenToken{tmp,next_string});
-				next_string = false;
+				ret.push_back(KittenToken{tmp,false,line});
 				tmp = i;
-				ret.push_back(KittenToken{tmp,next_string});
+				ret.push_back(KittenToken{tmp,false,line});
 				tmp = "";
 			}
 			else {
@@ -160,8 +171,7 @@ public:
 			}
 		}
 		if(tmp != "" || !erase_emptys) {
-			ret.push_back(KittenToken{tmp,next_string});
-			next_string = false;
+			ret.push_back(KittenToken{tmp,false,line});
 		}
 		return ret;
 	}
